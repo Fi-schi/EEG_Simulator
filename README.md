@@ -1,18 +1,18 @@
 # EEG-Simulator
 
 Ein Projektseminar an der Hochschule Wismar zur **Entwicklung eines
-EEG-Signalgenerators**.\
+EEG-Signalgenerators**. 
 Ziel ist es, eine kompakte, intuitive und didaktisch nutzbare Plattform
 zur Erzeugung synthetischer EEG-Signale bereitzustellen.
 
 ## Features
 
--   4 analoge Ausgangskanäle für simultane Signalwiedergabe\
--   Steuerung über einen **ESP32-S3 Mikrocontroller**\
--   Hochauflösender DAC (**DAC8412FPZ**) mit 12-Bit Auflösung\
--   Benutzerfreundliche **Weboberfläche** zur Signalverwaltung\
--   Upload eigener Signaldateien über WLAN\
--   Signale im Mikrovoltbereich durch Tiefpassfilter & Spannungsteiler\
+-   4 analoge Ausgangskanäle für simultane Signalwiedergabe 
+-   Steuerung über einen **ESP32-S3 Mikrocontroller** 
+-   Hochauflösender DAC (**DAC8412FPZ**) mit 12-Bit Auflösung 
+-   Benutzerfreundliche **Weboberfläche** zur Signalverwaltung 
+-   Upload eigener Signaldateien über WLAN 
+-   Signale im Mikrovoltbereich durch Tiefpassfilter & Spannungsteiler 
 -   Keine zusätzliche Softwareinstallation erforderlich (Bedienung im
     Browser)
 
@@ -31,36 +31,36 @@ zur Erzeugung synthetischer EEG-Signale bereitzustellen.
 
 ## Getting Started
 
-1.  Platine über **USB-C** mit Strom versorgen\
+1.  Platine über **USB-C** mit Strom versorgen 
 2.  Verbindung mit dem WLAN **EEGsimulator** (Passwort:
-    `EEGsimulator2525`)\
-3.  Browser öffnen und `192.168.4.1` eingeben\
+    `EEGsimulator2525`) 
+3.  Browser öffnen und `192.168.4.1` eingeben 
 4.  Über die Weboberfläche:
-    -   Signaldateien (`.txt`) hochladen\
-    -   Dateien Kanälen zuweisen\
+    -   Signaldateien (`.txt`) hochladen 
+    -   Dateien Kanälen zuweisen 
     -   „Verarbeitung anstoßen" und anschließend „Abspielen" klicken
 
 ## Dateiformat für Signale
 
--   Textdateien mit Zahlenwerten (positive/negative Amplituden)\
--   Automatische Skalierung auf den **12-Bit Wertebereich (0--4095)**\
+-   Textdateien mit Zahlenwerten (positive/negative Amplituden) 
+-   Automatische Skalierung auf den **12-Bit Wertebereich (0--4095)** 
 -   Mapping:
-    -   Negative Werte → 0--2047\
+    -   Negative Werte → 0--2047 
     -   Positive Werte → 2048--4095
 
 ## Hinweise
 
--   Für stabile Ausgabe eine saubere Stromversorgung sicherstellen\
--   Signale lassen sich per Oszilloskop überwachen\
+-   Für stabile Ausgabe eine saubere Stromversorgung sicherstellen 
+-   Signale lassen sich per Oszilloskop überwachen 
 -   Änderungen an Reihenfolge oder Kanälen erfordern erneute
     Verarbeitung
 
 ## Ausblick
 
--   Verbesserte analoge Filter (z. B. Sallen-Key)\
--   Optimierte Stromversorgung (LDOs oder Akkubetrieb)\
+-   Verbesserte analoge Filter (z. B. Sallen-Key) 
+-   Optimierte Stromversorgung (LDOs oder Akkubetrieb) 
 -   Bibliothek vordefinierter EEG-Signalformen (Alpha-/Beta-Wellen
-    etc.)\
+    etc.) 
 -   Live-Visualisierung der Signale direkt im Browser
 
 ------------------------------------------------------------------------
