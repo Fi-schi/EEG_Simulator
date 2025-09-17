@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEG-Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Vollbildhöhe */
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px; /* Maximale Breite */
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+        .logo {
+            width: 100px;
+        }
+        .file-list {
+            max-width: 600px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .file-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .file-list li {
+            padding: 5px;
+            background-color: #fff;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-list button {
+            background-color: #007bff; /* Blaue Buttons */
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .file-list button:hover {
+            background-color: #0056b3; /* Dunkleres Blau beim Hover */
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff; /* Blaue Buttons */
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3; /* Dunkleres Blau beim Hover */
+        }
+        #fileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <!-- Logo als PNG mit transparentem Hintergrund -->
+            <img src="/HS-Wismar_Logo-FIW_V1_RGB.png" alt="HS-Wismar" class="logo">
+            <h1>EEG-Simulator</h1>
+        </div>
+
+        <!-- Kombinierter Button zum Auswählen und Hochladen von Dateien -->
+        <div>
+            <input type="file" id="fileInput" accept=".txt" multiple>
+            <button onclick="document.getElementById('fileInput').click()">Dateien auswählen und hochladen</button>
+        </div>
+
+        <!-- Liste der hochgeladenen Dateien -->
+        <div class="file-list">
+            <ul id="fileList"></ul>
+        </div>
+
+        <!-- Buttons für Verarbeitung und Abspielen/Pausieren -->
+        <div>
+            <button onclick="processFiles()">Dateien verarbeiten</button>
+            <button id="playPauseButton" onclick="togglePlayPause()">Abspielen</button>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFiles = []; // Array für hochgeladene Dateien
+        let processedFiles = []; // Array für verarbeitete Dateien
+        let currentFileIndex = 0; // Index der aktuell wiedergegebenen Datei
+        let isPlaying = false; // Spielstatus (Abspielen oder Pausieren)
+
+        // Funktion zum Hochladen von Dateien
+        document.getElementById('fileInput').addEventListener('change', uploadFiles);
+
+        function uploadFiles(event) {
+            const files = event.target.files;
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].name.endsWith('.txt')) {
+                    uploadedFiles.push(files[i]);
+                    displayFiles();
+                }
+            }
+        }
+
+        // Dateien in der Liste anzeigen
+        function displayFiles() {
+            const fileListElement = document.getElementById("fileList");
+            fileListElement.innerHTML = ""; // Liste leeren
+            uploadedFiles.forEach((file, index) => {
+                const li = document.createElement("li");
+
+                // Dateiname anzeigen
+                const fileName = document.createElement("span");
+                fileName.textContent = file.name;
+                li.appendChild(fileName);
+
+                // Buttons für das Verschieben der Dateien
+                const moveUpButton = document.createElement("button");
+                moveUpButton.textContent = "↑";
+                moveUpButton.onclick = () => moveFileUp(index);
+
+                const moveDownButton = document.createElement("button");
+                moveDownButton.textContent = "↓";
+                moveDownButton.onclick = () => moveFileDown(index);
+
+                const buttonContainer = document.createElement("div");
+                buttonContainer.appendChild(moveUpButton);
+                buttonContainer.appendChild(moveDownButton);
+
+                li.appendChild(buttonContainer);
+                fileListElement.appendChild(li);
+            });
+        }
+
+        // Funktion, um die Reihenfolge der Dateien nach oben zu verschieben
+        function moveFileUp(index) {
+            if (index > 0) {
+                [uploadedFiles[index], uploadedFiles[index - 1]] = [uploadedFiles[index - 1], uploadedFiles[index]];
+                displayFiles(); // Liste neu rendern
+            }
+        }
+
+        // Funktion, um die Reihenfolge der Dateien nach unten zu verschieben
+        function moveFileDown(index) {
+            if (index < uploadedFiles.length - 1) {
+                [uploadedFiles[index], uploadedFiles[index + 1]] = [uploadedFiles[index + 1], uploadedFiles[index]];
+                displayFiles(); // Liste neu rendern
+            }
+        }
+
+        // Funktion zum Verarbeiten der ausgewählten Dateien
+        function processFiles() {
+            const fileListElement = document.getElementById("fileList");
+            const checkboxes = fileListElement.querySelectorAll("input[type='checkbox']:checked");
+            processedFiles = []; // Verarbeitete Dateien zurücksetzen
+            checkboxes.forEach((checkbox, index) => {
+                const file = uploadedFiles[index];
+                if (file) {
+                    processedFiles.push(file);
+                }
+            });
+            alert(`${processedFiles.length} Datei(en) werden verarbeitet.`);
+        }
+
+        // Funktion zum Abspielen und Pausieren der Dateien
+        function togglePlayPause() {
+            if (isPlaying) {
+                isPlaying = false;
+                document.getElementById("playPauseButton").textContent = "Abspielen"; // Button Text zu "Abspielen"
+                alert("Das Abspielen wurde pausiert.");
+            } else {
+                if (processedFiles.length === 0) {
+                    alert("Es sind keine Dateien verarbeitet.");
+                    return;
+                }
+                isPlaying = true;
+                document.getElementById("playPauseButton").textContent = "Pausieren"; // Button Text zu "Pausieren"
+                currentFileIndex = 0;
+                playNextFile();
+            }
+        }
+
+        // Nächste Datei abspielen
+        function playNextFile() {
+            if (currentFileIndex < processedFiles.length) {
+                const file = processedFiles[currentFileIndex];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    console.log(`Abspielen: ${file.name}`);
+                    console.log(e.target.result); // Hier könnte der Arduino-Code zur Verarbeitung der Datei stehen
+                    currentFileIndex++;
+                    if (isPlaying) {
+                        setTimeout(playNextFile, 1000); // Nach einer Sekunde die nächste Datei abspielen
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                stopPlaying();
+            }
+        }
+
+        // Abspielen stoppen
+        function stopPlaying() {
+            isPlaying = false;
+            document.getElementById("playPauseButton").textContent = "Abspielen"; // Button Text zu "Abspielen"
+            alert("Das Abspielen der Dateien wurde gestoppt.");
+        }
+    </script>
+
+</body>
+</html>

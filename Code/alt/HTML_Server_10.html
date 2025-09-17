@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEG-Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding-bottom: 20px;
+        }
+        .logo {
+            width: 100px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            color: #333;
+        }
+        .file-list {
+            max-width: 600px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+        .file-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .file-list li {
+            padding: 10px;
+            background-color: #fff;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+        }
+        .file-list li.dragging {
+            background-color: #e6e6e6;
+            opacity: 0.7;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #fileInput {
+            display: none;
+        }
+        #storageInfo {
+            font-size: 14px;
+            color: #555;
+            font-weight: bold;
+        }
+        #progressPopup {
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, 0);
+            width: 300px;
+            background: white;
+            padding: 10px 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            text-align: center;
+            z-index: 1000;
+            font-size: 14px;
+            color: #333;
+        }
+        #progressPopup label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        progress {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 20px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        progress::-webkit-progress-bar {
+            background-color: #f4f4f9;
+        }
+        progress::-webkit-progress-value {
+            background-color: #007bff;
+        }
+        progress::-moz-progress-bar {
+            background-color: #007bff;
+        }
+        #infoButton {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #infoButton:hover {
+            background-color: #218838;
+        }
+        #infoPopup {
+            display: none;
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, 0);
+            width: 300px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            z-index: 1000;
+            text-align: center;
+        }
+        #infoPopup h2 {
+            margin-top: 0;
+        }
+        #infoPopup button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #infoPopup button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="/HS-Wismar_Logo-FIW_V1_RGB.png" alt="HS-Wismar" class="logo">
+            <h1>EEG-Simulator</h1>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <input type="file" id="fileInput" accept=".txt" multiple>
+            <button onclick="document.getElementById('fileInput').click()">Dateien auswählen und hochladen</button>
+            <button id="infoButton" onclick="toggleInfoPopup()">Info</button>
+            <span id="storageInfo">Speicher: Lade...</span>
+        </div>
+
+        <div class="file-list">
+            <ul id="fileList"></ul>
+        </div>
+
+        <div>
+            <button onclick="processFiles()">Ausgewählte Dateien verarbeiten</button>
+            <button id="playPauseButton" onclick="togglePlayPause()">Abspielen</button>
+        </div>
+
+        <div id="progressPopup" style="display: none;">
+            <label for="fileUploadProgress">Hochladen läuft...</label>
+            <progress id="fileUploadProgress" value="0" max="100" style="width: 100%;"></progress>
+            <div id="timeRemaining" style="font-size: 12px; margin-top: 5px; color: #555;">Verbleibende Zeit: --:--</div>
+        </div>        
+        
+        <div id="infoPopup">
+            <h2>Info</h2>
+            <p>Bitte beachten Sie die folgenden Namenskonventionen für hochzuladende Dateien:</p>
+            <ul>
+                <li>Dateiname sollte keine Leerzeichen enthalten.</li>
+                <li>Verwenden Sie nur alphanumerische Zeichen und Unterstriche.</li>
+                <li>Dateiendung sollte .txt sein.</li>
+            </ul>
+            <button onclick="toggleInfoPopup()">Schließen</button>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFiles = []; 
+        let isPlaying = false; 
+        const excludedFiles = ["HS-Wismar_Logo-FIW_V1_RGB.png", "HTML_Server.html"];
+
+        window.onload = function () {
+            fetchFileList();
+            fetchStorageInfo(); // Speicherstand beim Laden der Seite abrufen
+            setInterval(fetchStorageInfo, 5000); // Speicherstand alle 5 Sekunden aktualisieren
+        };
+
+        function fetchFileList() {
+            fetch('/getFiles')
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Dateiliste vom Server:", data.files);
+                    // Wandelt die Dateinamen in Objekte um, um die 'selected'-Eigenschaft zu ermöglichen
+                    uploadedFiles = data.files.map(file => ({ name: file, selected: false }));
+                    console.log("Gefilterte Dateien:", uploadedFiles.filter(file => !isExcluded(file.name)));
+                    displayFiles();
+                })
+                .catch(error => console.error('Fehler beim Abrufen der Dateiliste: ', error));
+        }
+
+        function isExcluded(filename) {
+            return excludedFiles.includes(filename);
+        }
+
+        function displayFiles() {
+            const fileListElement = document.getElementById("fileList");
+            fileListElement.innerHTML = "";
+
+            uploadedFiles
+                .filter(file => !isExcluded(file.name))
+                .forEach((file, index) => {
+                    const li = document.createElement("li");
+                    li.setAttribute('draggable', true);
+                    li.dataset.index = index;
+
+                    const fileName = document.createElement("span");
+                    fileName.textContent = file.name;
+                    li.appendChild(fileName);
+
+                    const actionContainer = document.createElement("div");
+                    actionContainer.style.display = "flex";
+                    actionContainer.style.gap = "5px";
+
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.checked = file.selected;
+                    checkbox.addEventListener('change', () => {
+                        uploadedFiles[index].selected = checkbox.checked;
+                    });
+                    actionContainer.appendChild(checkbox);
+
+                    const deleteIcon = document.createElement("span");
+                    deleteIcon.textContent = "🗑️";
+                    deleteIcon.style.cursor = "pointer";
+                    deleteIcon.addEventListener('click', () => deleteFile(file.name));
+                    actionContainer.appendChild(deleteIcon);
+
+                    li.appendChild(actionContainer);
+                    fileListElement.appendChild(li);
+                });
+
+            addDragAndDrop(fileListElement);
+        }
+
+        function addDragAndDrop(list) {
+            let draggedItem = null;
+
+            list.addEventListener('dragstart', (e) => {
+                draggedItem = e.target;
+                draggedItem.classList.add('dragging');
+            });
+
+            list.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                if (afterElement == null) {
+                    list.appendChild(draggedItem);
+                } else {
+                    list.insertBefore(draggedItem, afterElement);
+                }
+            });
+
+            list.addEventListener('dragend', () => {
+                draggedItem.classList.remove('dragging');
+                updateFileOrder();
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function updateFileOrder() {
+            const items = document.querySelectorAll('#fileList li');
+            uploadedFiles = Array.from(items).map(item => {
+                const index = item.dataset.index;
+                return uploadedFiles[index];
+            });
+            console.log('Neue Reihenfolge:', uploadedFiles.map(f => f.name));
+        }
+
+        function deleteFile(fileName) {
+            if (!confirm(`Möchtest du die Datei "${fileName}" wirklich löschen?`)) {
+                return;
+            }
+        
+            fetch(`/delete?name=${encodeURIComponent(fileName)}`, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) {
+                        console.log(`Datei "${fileName}" wurde erfolgreich gelöscht.`);
+                        fetchFileList();
+                    } else {
+                        console.log(`Fehler beim Löschen der Datei "${fileName}".`);
+                    }
+                })
+                .catch(error => console.error('Fehler beim Löschen der Datei: ', error));
+        }
+
+        function uploadFilesSequentially(files) {
+            const progressPopup = document.getElementById('progressPopup');
+            const progressBar = document.getElementById('fileUploadProgress');
+            const timeRemainingDisplay = document.getElementById('timeRemaining');
+        
+            let totalSize = 0;
+            let uploadedSize = 0;
+            const uploadStartTime = Date.now();
+        
+            progressPopup.style.display = 'block';
+        
+            for (let file of files) {
+                totalSize += file.size;
+            }
+        
+            let uploadNext = (index) => {
+                if (index >= files.length) {
+                    progressPopup.style.display = 'none';
+                    progressBar.value = 0;
+                    timeRemainingDisplay.textContent = "Verbleibende Zeit: ca. --:--";
+                    fetchFileList();
+                    return;
+                }
+                let file = files[index];
+                const formData = new FormData();
+                formData.append('file', file);
+        
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                }).then(() => {
+                    console.log(`Datei erfolgreich hochgeladen: ${file.name}`);
+                    uploadedSize += file.size;
+                    progressBar.value = (uploadedSize / totalSize) * 100;
+        
+                    const elapsedTime = (Date.now() - uploadStartTime) / 1000;
+                    const averageSpeed = uploadedSize / elapsedTime;
+                    const remainingTime = (totalSize - uploadedSize) / averageSpeed;
+                    const minutes = Math.floor(remainingTime / 60);
+                    const seconds = Math.floor(remainingTime % 60);
+                    timeRemainingDisplay.textContent = `Verbleibende Zeit: ca. ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        
+                    uploadNext(index + 1);
+                }).catch(error => {
+                    console.error('Fehler beim Hochladen: ', error);
+                    uploadNext(index + 1);
+                });
+            };
+        
+            uploadNext(0);
+        }
+        
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                uploadFilesSequentially(files);
+            }
+        });
+        
+        function fetchStorageInfo() {
+            fetch('/storage')
+                .then(response => response.json())
+                .then(data => {
+                    const used = (data.used / 1024).toFixed(2);
+                    const total = (data.total / 1024).toFixed(2);
+                    const percent = ((data.used / data.total) * 100).toFixed(1);
+                    document.getElementById('storageInfo').textContent = `Speicher: ${used} KB / ${total} KB (${percent}%)`;
+                })
+                .catch(error => {
+                    console.error('Fehler beim Abrufen des Speicherstands:', error);
+                    document.getElementById('storageInfo').textContent = 'Speicher: Fehler';
+                });
+        }
+        
+        function processFiles() {
+            const selectedFiles = uploadedFiles.filter(file => file.selected);
+            console.log("Ausgewählte Dateien:", selectedFiles);
+            if (selectedFiles.length === 0) {
+                alert("Keine Dateien ausgewählt. Bitte markieren Sie die gewünschten Dateien.");
+                return;
+            }
+
+            const fileContents = [];
+            let processedCount = 0;
+            selectedFiles.forEach(file => {
+                fetch(file.name)
+                    .then(response => response.text())
+                    .then(content => {
+                        fileContents.push({ name: file.name, content: content });
+                        processedCount++;
+                        if (processedCount === selectedFiles.length) {
+                            sendFilesToServer(fileContents);
+                        }
+                    })
+                    .catch(error => console.error('Fehler beim Lesen der Datei: ', error));
+            });
+        }
+
+        function sendFilesToServer(files) {
+            const formData = new FormData();
+            // Hier wird als Schlüssel "files" verwendet, sodass der Server den Parameter findet
+            files.forEach(file => {
+                formData.append('files', new Blob([file.content], { type: 'text/plain' }), file.name);
+            });
+        
+            fetch('/processFiles', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert(data);
+            })
+            .catch(error => console.error('Fehler beim Senden der Dateien: ', error));
+        }
+        
+        function togglePlayPause() {
+            if (!isPlaying) {
+                processFiles();
+                isPlaying = true;
+                document.getElementById("playPauseButton").textContent = "Pausieren";
+            } else {
+                isPlaying = false;
+                document.getElementById("playPauseButton").textContent = "Abspielen";
+            }
+        }
+        
+        function toggleInfoPopup() {
+            const infoPopup = document.getElementById('infoPopup');
+            infoPopup.style.display = infoPopup.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

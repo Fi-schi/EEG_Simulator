@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEG-Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding-bottom: 20px;
+        }
+        .logo {
+            width: 100px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            color: #333;
+        }
+        .file-list {
+            max-width: 600px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .file-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .file-list li {
+            padding: 10px;
+            background-color: #fff;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-list button {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .file-list button:hover {
+            background-color: #0056b3;
+        }
+        .file-list .checkbox-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .file-list .checkbox-container input {
+            margin-right: 10px;
+        }
+        .file-list .arrow-buttons {
+            display: none;
+            gap: 10px;
+            align-items: center;
+        }
+        .file-list input[type="checkbox"]:checked ~ .arrow-buttons {
+            display: flex;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #fileInput {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <img src="/HS-Wismar_Logo-FIW_V1_RGB.png" alt="HS-Wismar" class="logo">
+            <h1>EEG-Simulator</h1>
+        </div>
+
+        <div>
+            <input type="file" id="fileInput" accept=".txt" multiple>
+            <button onclick="document.getElementById('fileInput').click()">Dateien auswählen und hochladen</button>
+        </div>
+
+        <div class="file-list">
+            <ul id="fileList"></ul>
+        </div>
+
+        <div>
+            <button onclick="processFiles()">Dateien verarbeiten</button>
+            <button id="playPauseButton" onclick="togglePlayPause()">Abspielen</button>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFiles = []; // Array für hochgeladene Dateien
+        let processedFiles = []; // Array für verarbeitete Dateien
+        let currentFileIndex = 0; // Index der aktuell wiedergegebenen Datei
+        let isPlaying = false; // Spielstatus (Abspielen oder Pausieren)
+
+        // Event-Listener für das Hochladen von Dateien
+        document.getElementById('fileInput').addEventListener('change', uploadFiles);
+
+        function uploadFiles(event) {
+            const files = event.target.files;
+            if (files.length === 0) {
+                alert('Es wurden keine Dateien ausgewählt!');
+                return;
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].name.endsWith('.txt')) {
+                    uploadedFiles.push({ file: files[i], selected: false });
+                }
+            }
+            displayFiles(); // Dateien in der Liste anzeigen
+        }
+
+        // Anzeigen der hochgeladenen Dateien
+        function displayFiles() {
+            const fileListElement = document.getElementById("fileList");
+            fileListElement.innerHTML = ""; // Liste leeren
+
+            uploadedFiles.forEach((fileObj, index) => {
+                const li = document.createElement("li");
+
+                // Dateiname anzeigen
+                const fileName = document.createElement("span");
+                fileName.textContent = fileObj.file.name;
+                li.appendChild(fileName);
+
+                // Checkbox für die Dateiauswahl
+                const checkboxContainer = document.createElement("div");
+                checkboxContainer.classList.add("checkbox-container");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.id = "file_" + index;
+                checkbox.name = "file_" + index;
+                checkbox.checked = fileObj.selected; // Behalte den ausgewählten Zustand
+                checkbox.addEventListener('change', () => {
+                    uploadedFiles[index].selected = checkbox.checked; // Speichern des aktuellen Zustands
+                });
+                checkboxContainer.appendChild(checkbox);
+
+                // Pfeile zum Verschieben der Datei
+                const arrowButtons = document.createElement("div");
+                arrowButtons.classList.add("arrow-buttons");
+                const moveUpButton = document.createElement("button");
+                moveUpButton.textContent = "↑";
+                moveUpButton.onclick = () => moveFileUp(index);
+
+                const moveDownButton = document.createElement("button");
+                moveDownButton.textContent = "↓";
+                moveDownButton.onclick = () => moveFileDown(index);
+
+                arrowButtons.appendChild(moveUpButton);
+                arrowButtons.appendChild(moveDownButton);
+                checkboxContainer.appendChild(arrowButtons);
+
+                li.appendChild(checkboxContainer);
+                fileListElement.appendChild(li);
+            });
+        }
+
+// Funktion zum Verschieben der Datei nach oben
+function moveFileUp(index) {
+    if (index > 0) {
+        // Dateien tauschen
+        [uploadedFiles[index], uploadedFiles[index - 1]] = [uploadedFiles[index - 1], uploadedFiles[index]];
+        displayFiles(); // Liste neu rendern
+    }
+}
+
+// Funktion zum Verschieben der Datei nach unten
+function moveFileDown(index) {
+    if (index < uploadedFiles.length - 1) {
+        // Dateien tauschen
+        [uploadedFiles[index], uploadedFiles[index + 1]] = [uploadedFiles[index + 1], uploadedFiles[index]];
+        displayFiles(); // Liste neu rendern
+    }
+}
+
+
+        // Funktion zum Verarbeiten der ausgewählten Dateien
+        function processFiles() {
+            const fileListElement = document.getElementById("fileList");
+            const checkboxes = fileListElement.querySelectorAll("input[type='checkbox']:checked");
+            processedFiles = []; // Verarbeitete Dateien zurücksetzen
+            checkboxes.forEach((checkbox, index) => {
+                const file = uploadedFiles[index].file;
+                if (file) {
+                    processedFiles.push(file);
+                }
+            });
+            alert(`${processedFiles.length} Datei(en) werden verarbeitet.`);
+        }
+
+        // Funktion zum Abspielen und Pausieren der Dateien
+        function togglePlayPause() {
+            if (isPlaying) {
+                isPlaying = false;
+                document.getElementById("playPauseButton").textContent = "Abspielen";
+                alert("Das Abspielen wurde pausiert.");
+            } else {
+                if (processedFiles.length === 0) {
+                    alert("Es sind keine Dateien verarbeitet.");
+                    return;
+                }
+                isPlaying = true;
+                document.getElementById("playPauseButton").textContent = "Pausieren";
+                currentFileIndex = 0;
+                playNextFile();
+            }
+        }
+
+        // Nächste Datei abspielen
+        function playNextFile() {
+            if (currentFileIndex < processedFiles.length) {
+                const file = processedFiles[currentFileIndex];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    console.log(`Abspielen: ${file.name}`);
+                    console.log(e.target.result);
+                    currentFileIndex++;
+                    if (isPlaying) {
+                        setTimeout(playNextFile, 1000); // Nach einer Sekunde die nächste Datei abspielen
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                stopPlaying();
+            }
+        }
+
+        // Abspielen stoppen
+        function stopPlaying() {
+            isPlaying = false;
+            document.getElementById("playPauseButton").textContent = "Abspielen";
+            alert("Das Abspielen der Dateien wurde gestoppt.");
+        }
+    </script>
+
+</body>
+</html>

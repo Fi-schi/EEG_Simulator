@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datei Upload</title>
+    <style>
+        /* Deine CSS-Styles */
+        body { font-family: Arial, sans-serif; text-align: center; color: #333; }
+        .container { max-width: 600px; margin: auto; padding: 20px; }
+        .button { padding: 10px 20px; background-color: #004b8d; color: #fff; border: none; cursor: pointer; margin-top: 10px; }
+        .button:hover { background-color: #003366; }
+        input[type="file"] { display: none; }
+        label { background-color: #004b8d; color: #fff; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Datei hochladen</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="file">Wähle eine Datei</label>
+            <input type="file" id="file" name="file" onchange="uploadFile()">
+            <button type="button" class="button" onclick="processSelectedFile()">Verarbeiten</button>
+        </form>
+        <div id="fileList"></div>
+    </div>
+
+    <script>
+        function uploadFile() {
+            let fileInput = document.getElementById("file");
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            fetch("/upload", { method: "POST", body: formData })
+                .then(response => response.text())
+                .then(data => alert(data));
+        }
+
+        function processSelectedFile() {
+            fetch("/process", { method: "POST" })
+                .then(response => response.text())
+                .then(data => alert(data));
+        }
+    </script>
+</body>
+</html>

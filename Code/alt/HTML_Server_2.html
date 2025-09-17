@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EEG-Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+        .logo {
+            width: 100px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .file-list {
+            max-width: 600px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .file-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .file-list li {
+            padding: 5px;
+            background-color: #fff;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <!-- Logo oben links, URL wird dynamisch über den Webserver des ESP32 gesetzt -->
+        <img src="/HS-Wismar_Logo-FIW_V1_RGB.jpg" alt="HS-Wismar" class="logo">
+        <h1>EEG-Simulator</h1>
+    </div>
+
+    <div class="container">
+        <!-- Bereich zum Hochladen von .text-Dateien -->
+        <div>
+            <input type="file" id="fileInput" accept=".txt" multiple>
+            <button onclick="uploadFiles()">Dateien hochladen</button>
+        </div>
+
+        <!-- Liste der hochgeladenen Dateien -->
+        <div class="file-list">
+            <ul id="fileList"></ul>
+        </div>
+
+        <!-- Buttons für Verarbeitung und Abspielen -->
+        <div>
+            <button onclick="processFiles()">Dateien verarbeiten</button>
+            <button onclick="playFiles()">Dateien abspielen</button>
+            <button onclick="pauseFiles()">Pausieren</button>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFiles = []; // Array für hochgeladene Dateien
+        let processedFiles = []; // Array für verarbeitete Dateien
+        let currentFileIndex = 0; // Index der aktuell wiedergegebenen Datei
+        let isPlaying = false; // Spielstatus (Abspielen oder Pausieren)
+
+        // Funktion zum Hochladen von Dateien
+        function uploadFiles() {
+            const fileInput = document.getElementById("fileInput");
+            const files = fileInput.files;
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].name.endsWith('.txt')) {
+                    uploadedFiles.push(files[i]);
+                    displayFiles();
+                }
+            }
+            fileInput.value = ""; // Eingabefeld zurücksetzen
+        }
+
+        // Dateien in der Liste anzeigen
+        function displayFiles() {
+            const fileListElement = document.getElementById("fileList");
+            fileListElement.innerHTML = ""; // Liste leeren
+            uploadedFiles.forEach((file, index) => {
+                const li = document.createElement("li");
+                li.textContent = file.name;
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.id = "file_" + index;
+                li.prepend(checkbox);
+                fileListElement.appendChild(li);
+            });
+        }
+
+        // Funktion zum Verarbeiten der ausgewählten Dateien
+        function processFiles() {
+            const fileListElement = document.getElementById("fileList");
+            const checkboxes = fileListElement.querySelectorAll("input[type='checkbox']:checked");
+            processedFiles = []; // Verarbeitete Dateien zurücksetzen
+            checkboxes.forEach((checkbox, index) => {
+                const file = uploadedFiles[index];
+                if (file) {
+                    processedFiles.push(file);
+                }
+            });
+            alert(`${processedFiles.length} Datei(en) werden verarbeitet.`);
+        }
+
+        // Funktion zum Abspielen der verarbeiteten Dateien
+        function playFiles() {
+            if (processedFiles.length === 0) {
+                alert("Es sind keine Dateien verarbeitet.");
+                return;
+            }
+            if (isPlaying) {
+                alert("Die Dateien werden bereits abgespielt.");
+                return;
+            }
+            isPlaying = true;
+            currentFileIndex = 0;
+            playNextFile();
+        }
+
+        // Nächste Datei abspielen
+        function playNextFile() {
+            if (currentFileIndex < processedFiles.length) {
+                const file = processedFiles[currentFileIndex];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    console.log(`Abspielen: ${file.name}`);
+                    console.log(e.target.result); // Hier könnte der Arduino-Code zur Verarbeitung der Datei stehen
+                    currentFileIndex++;
+                    setTimeout(playNextFile, 1000); // Nach einer Sekunde die nächste Datei abspielen
+                };
+                reader.readAsText(file);
+            } else {
+                stopPlaying();
+            }
+        }
+
+        // Abspielen stoppen
+        function stopPlaying() {
+            isPlaying = false;
+            alert("Das Abspielen der Dateien wurde gestoppt.");
+        }
+
+        // Dateien pausieren
+        function pauseFiles() {
+            if (isPlaying) {
+                isPlaying = false;
+                alert("Das Abspielen wurde pausiert.");
+            } else {
+                alert("Keine Dateien werden gerade abgespielt.");
+            }
+        }
+    </script>
+
+</body>
+</html>

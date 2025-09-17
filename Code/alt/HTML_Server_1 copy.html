@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Datei-Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; color: #333; background-color: #f9f9f9; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: auto; padding: 20px; background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); margin-top: 50px; }
+        .button { padding: 10px 20px; background-color: #004b8d; color: #fff; border: none; cursor: pointer; margin-top: 10px; border-radius: 4px; }
+        .button:hover { background-color: #003366; }
+        input[type="file"] { display: none; }
+        label { background-color: #004b8d; color: #fff; padding: 10px 20px; border-radius: 4px; cursor: pointer; display: inline-block; margin-top: 10px; }
+        .status { margin-top: 20px; font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Datei-Upload für ESP32</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <label for="file">Wähle eine Datei</label>
+            <input type="file" id="file" name="file" onchange="uploadFile()">
+        </form>
+        <button class="button" onclick="processFile()">Datei verarbeiten</button>
+        <div id="status" class="status">Bereit.</div>
+    </div>
+
+    <script>
+        // Upload der Datei an den ESP32
+        function uploadFile() {
+            const fileInput = document.getElementById("file");
+            if (fileInput.files.length === 0) {
+                alert("Bitte wähle eine Datei aus!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("status").innerText = "Upload erfolgreich: " + data;
+            })
+            .catch(error => {
+                document.getElementById("status").innerText = "Fehler beim Upload: " + error;
+            });
+        }
+
+        // Verarbeitung der hochgeladenen Datei starten
+        function processFile() {
+            fetch("/process", {
+                method: "POST"
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("status").innerText = "Verarbeitung abgeschlossen: " + data;
+            })
+            .catch(error => {
+                document.getElementById("status").innerText = "Fehler bei der Verarbeitung: " + error;
+            });
+        }
+    </script>
+</body>
+</html>
